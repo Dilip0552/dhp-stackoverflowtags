@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Stack Overflow Tag Analysis</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@1.2.0/dist/chartjs-chart-matrix.min.js"></script>
+
+    <style>
+      
+      body {
+      		padding: 20px;
+            margin: 0;
+            height: 100vh;
+            background: linear-gradient(-45deg, #ff4e50, #1e90ff, #32cd32, #8e2de2, #ff6a00);
+            background-size: 400% 400%;
+            animation: gradientAnimation 15s ease infinite;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: white;
+            font-size: 2em;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+		@keyframes gradientAnimation {
+      0% {
+        background-position: 0% 50%;
+      }
+      50% {
+        background-position: 100% 50%;
+      }
+      100% {
+        background-position: 0% 50%;
+      }
+    }
+      h2 {
+          margin-top: 40px;
+          color: #ffcc70;
+      }
+      canvas {
+          display: block;
+          margin: 30px auto;
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 10px;
+          padding: 20px;
+				}
+				#barChart {
+					width: 100% !important;
+					height: 500px !important;
+					max-width: 1200px;
+
+					/* Glassmorphism style */
+					background: rgba(255, 255, 255, 0.1);  /* semi-transparent white */
+					backdrop-filter: blur(20px);          /* the blur effect */
+					-webkit-backdrop-filter: blur(20px);  /* Safari support */
+					border-radius: 16px;                  /* rounded corners */
+					border: 1px solid rgba(255, 255, 255, 0.2);  /* subtle border */
+					box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2); /* optional soft shadow */
+}
+
+      #lineChart {
+				width: 100% !important;
+				height: 450px !important;
+          /* max-width: 1000px; */
+					/* Glassmorphism style */
+					background: rgba(255, 255, 255, 0.1);  /* semi-transparent white */
+					backdrop-filter: blur(20px);          /* the blur effect */
+					-webkit-backdrop-filter: blur(20px);  /* Safari support */
+					border-radius: 16px;                  /* rounded corners */
+					border: 1px solid rgba(255, 255, 255, 0.2);  /* subtle border */
+					box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2); /* optional soft shadow */
+      }
+      #overallLineChart {
+				width: 100% !important;
+				height: 500px !important;
+          max-width: 1100px;
+					/* Glassmorphism style */
+					background: rgba(255, 255, 255, 0.1);  /* semi-transparent white */
+					backdrop-filter: blur(20px);          /* the blur effect */
+					-webkit-backdrop-filter: blur(20px);  /* Safari support */
+					border-radius: 16px;                  /* rounded corners */
+					border: 1px solid rgba(255, 255, 255, 0.2);  /* subtle border */
+					box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2); /* optional soft shadow */
+      }
+      #radarChart {
+				width: 66% !important;
+				height: 460px !important;
+          max-width: 900px;
+					/* Glassmorphism style */
+					background: rgba(255, 255, 255, 0.1);  /* semi-transparent white */
+					backdrop-filter: blur(20px);          /* the blur effect */
+					-webkit-backdrop-filter: blur(20px);  /* Safari support */
+					border-radius: 16px;                  /* rounded corners */
+					border: 1px solid rgba(255, 255, 255, 0.2);  /* subtle border */
+					box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2); /* optional soft shadow */
+      }
+      #pieChart {
+				width: 65% !important;
+        height: 420px !important;
+        max-width: 850px;
+					/* Glassmorphism style */
+        background: rgba(255, 255, 255, 0.1);  /* semi-transparent white */
+        backdrop-filter: blur(20px);          /* the blur effect */
+        -webkit-backdrop-filter: blur(20px);  /* Safari support */
+        border-radius: 16px;                  /* rounded corners */
+        border: 1px solid rgba(255, 255, 255, 0.2);  /* subtle border */
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2); /* optional soft shadow */
+      }
+      #stackedBarChart {
+          width: 100% !important;
+          height: 500px !important;
+          max-width: 1200px;
+					/* Glassmorphism style */
+					background: rgba(255, 255, 255, 0.1);  /* semi-transparent white */
+					backdrop-filter: blur(20px);          /* the blur effect */
+					-webkit-backdrop-filter: blur(20px);  /* Safari support */
+					border-radius: 16px;                  /* rounded corners */
+					border: 1px solid rgba(255, 255, 255, 0.2);  /* subtle border */
+					box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2); /* optional soft shadow */
+      }
+     
+      select {
+          padding: 10px;
+          border-radius: 8px;
+          border: none;
+          margin-bottom: 20px;
+          background-color: #2d2d2d;
+          color: #fff;
+          font-size: 1rem;
+      }
+      body{
+        display: flex;
+        flex-direction: column;
+        align-items:center ;
+        justify-content: center;
+      }
+      .text-white{
+        font-size: 1.18rem;
+      }
+			[x-cloak] { display: none !important; }
+			#tagSelector {
+				padding: 0.6rem 1rem;
+				border: none;
+				border-radius: 12px;
+				background: rgba(255, 255, 255, 0.1); /* Light transparent white */
+				color: black;
+				backdrop-filter: blur(10px); /* Glassmorphism effect */
+				font-size: 1rem;
+				box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* Soft shadow */
+				transition: all 0.3s ease;
+				outline: none;
+				appearance: none;
+				cursor: pointer;
+}
+
+#tagSelector:hover,
+#tagSelector:focus {
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+	#radarYear{
+		padding: 0.6rem 1rem;
+		border: none;
+		border-radius: 12px;
+		background: rgba(255, 255, 255, 0.1); /* Light transparent white */
+		color: black;
+		backdrop-filter: blur(10px); /* Glassmorphism effect */
+		font-size: 1rem;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* Soft shadow */
+		transition: all 0.3s ease;
+		outline: none;
+		appearance: none;
+		cursor: pointer;
+	}
+
+	#radarYear:hover,
+#radarYear:focus {
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+	#pieYear{
+		padding: 0.6rem 1rem;
+		border: none;
+		border-radius: 12px;
+		background: rgba(255, 255, 255, 0.1); /* Light transparent white */
+		color: black;
+		backdrop-filter: blur(10px); /* Glassmorphism effect */
+		font-size: 1rem;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* Soft shadow */
+		transition: all 0.3s ease;
+		outline: none;
+		appearance: none;
+		cursor: pointer;
+	}
+
+	#pieYear:hover,
+#pieYear:focus {
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+
+  </style>
+</head>
+<body class="text-white overflow-y-auto min-h-screen" style="
+  background: linear-gradient(-45deg, #ff4e50, #1e90ff, #32cd32, #8e2de2, #ff6a00);
+  background-size: 400% 400%;
+  animation: gradientAnimation 15s ease infinite;
+">
+
+
+  <div x-data="{ tab: 'bar' }" class="pt-32 px-4 max-w-7xl mx-auto">
+
+    <!-- 📌 Sticky Tab Bar -->
+    <div class="fixed top-0 left-0 right-0 z-50 flex flex-wrap justify-center gap-4 px-6 py-3 bg-white/10 backdrop-blur-lg shadow-lg border-b border-white/20">
+      <template x-for="name in ['bar','line','overall','radar','pie','stacked']">
+        <button
+          :key="name"
+          @click="tab = name"
+          :class="tab === name 
+            ? 'bg-white/20 text-white border-b-2 border-yellow-300 font-semibold' 
+            : 'hover:bg-white/10 hover:text-yellow-200 transition-colors duration-300'"
+          class="px-4 py-2 rounded-md capitalize">
+          <span x-text="name + ' chart'"></span>
+        </button>
+      </template>
+    </div>
+
+    <!-- 🔽 Tab Content: each chart section -->
+    <div x-show="tab === 'bar'" x-cloak class="my-10 flex justify-center">
+      <canvas id="barChart" class="w-full max-w-5xl"></canvas>
+    </div>
+
+    <div x-show="tab === 'line'" x-cloak class="my-10 px-4">
+			<div class="flex flex-col items-center space-y-6">
+				<select id="tagSelector" class="w-full max-w-xs text-black"></select>
+			</div>
+		
+			<!-- Wrap canvas in full-width, large max-width container -->
+			<div class="w-full mx-auto" style="max-width: 1000px;">
+				<canvas id="lineChart" class="w-full h-[450px]"></canvas>
+			</div>
+		</div>
+		
+		
+
+    <div x-show="tab === 'overall'" x-cloak class="my-10 flex justify-center">
+      <canvas id="overallLineChart" class="w-full max-w-5xl"></canvas>
+    </div>
+
+    <div x-show="tab === 'radar'" x-cloak class="my-10 px-4">
+
+  <!-- Only dropdown in the centered column -->
+  <div class="flex flex-col items-center space-y-6">
+    <select id="radarYear" class="w-full max-w-xs text-black"></select>
+  </div>
+
+  <!-- Full-width container for canvas -->
+  <div class="w-full mx-auto" style="max-width: 1600px;">
+    <canvas id="radarChart" class="w-full" style="height: 500px;"></canvas>
+  </div>
+
+</div>
+
+		
+
+    <div x-show="tab === 'pie'" x-cloak class="my-10 flex flex-col items-center space-y-6">
+      <select id="pieYear" class="w-full max-w-xs text-black"></select>
+      <canvas id="pieChart" class="w-full max-w-5xl"></canvas>
+    </div>
+
+    <div x-show="tab === 'stacked'" x-cloak class="my-10 flex justify-center">
+      <canvas id="stackedBarChart" class="w-full max-w-5xl"></canvas>
+    </div>
+
+  </div>
+	<p >
+		Made with ❤️ by <span class="text-yellow-300 font-medium">Dilip Suthar</span>
+	</p>
+	
+  <script>
+    const customPalette = [
+            'rgba(255, 99, 132, 1)',   // Soft Red
+            'rgba(54, 162, 235, 1)',   // Sky Blue
+            'rgba(255, 206, 86, 1)',   // Yellow
+            'rgba(75, 192, 192, 1)',   // Aqua Green
+            'rgba(153, 102, 255, 1)',  // Purple
+            'rgba(255, 159, 64, 1)',   // Orange
+            'rgba(199, 199, 199, 1)',  // Gray
+            'rgba(201, 203, 207, 1)',  // Soft Gray
+            'rgba(0, 255, 127, 1)',    // Spring Green
+            'rgba(255, 105, 180, 1)',  // Hot Pink
+            'rgba(0, 191, 255, 1)',    // Deep Sky Blue
+            'rgba(186, 85, 211, 1)',   // Medium Orchid
+            'rgba(244, 164, 96, 1)',   // Sandy Brown
+            'rgba(32, 178, 170, 1)',   // Light Sea Green
+            'rgba(255, 20, 147, 1)'    // Deep Pink
+        ];
+    async function fetchData() {
+        const res = await fetch("https://dilipsuthar.pythonanywhere.com/getData");
+        return await res.json();
+    }
+    
+
+    function getRandomColor(opacity = 0.6) {
+        return `rgba(${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${opacity})`;
+    }
+
+    fetchData().then(data => {
+        // Extract years
+        const years = Object.keys(data);
+        
+        // 🎯 1. Bar Chart
+				const customColors = [
+					'#ff6f61', // coral red
+					'#6a5acd', // slate blue
+					'#20b2aa', // light sea green
+					'#ffa500', // orange
+					'#ff69b4', // hot pink
+					'#00ced1', // dark turquoise
+					'#9370db', // medium purple
+					'#3cb371', // medium sea green
+					'#1e90ff', // dodger blue
+					'#f08080'  // light coral
+				];
+
+        const barChart = new Chart(document.getElementById("barChart"), {
+            type: 'bar',
+            data: {
+                labels: data["2021"].tags,
+                datasets: years.map((year, i) => ({
+                    label: year,
+                    data: data[year].percentages,
+                    backgroundColor: customColors[i % customColors.length],
+                }))
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Top Tags by Year',
+                        color: '#fff',
+                        font: {
+                            size: 22, // Title font size in pixels
+                            family: 'Arial', // Optional: change font family
+                            weight: 'bold' // Optional: font weight
+                        }
+                    },
+                    legend: {
+                        labels: { color: "#fff" }
+                    }
+                },
+                scales: {
+                    x: { ticks: { color: "#212121" } },
+                    y: { ticks: { color: "#212121" } }
+                }
+            }   
+        });
+        const palette = [
+    '#00bcd4', // cyan
+    '#ff4081', // pink
+    '#7c4dff', // violet
+    '#4caf50', // green
+    '#ff9800', // orange
+    '#f44336', // red
+    '#03a9f4', // light blue
+    '#9c27b0'  // purple
+];
+
+function getColor(index, opacity = 1) {
+    const color = palette[index % palette.length];
+    if (opacity === 1) return color;
+    
+    // Convert HEX to RGBA
+    const hexToRgba = (hex, alpha) => {
+        const bigint = parseInt(hex.slice(1), 16);
+        const r = (bigint >> 16) & 255;
+        const g = (bigint >> 8) & 255;
+        const b = bigint & 255;
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    };
+    
+    return hexToRgba(color, opacity);
+}
+        const allTags = [...new Set(years.flatMap(year => data[year].tags))];
+        const tagSelector = document.getElementById("tagSelector");
+
+        allTags.forEach(tag => {
+            const option = document.createElement("option");
+            option.value = tag;
+            option.innerText = tag;
+            tagSelector.appendChild(option);
+        });
+
+        const lineChartCanvas = document.getElementById("lineChart");
+        let lineChartInstance;
+
+        tagSelector.addEventListener("change", () => {
+				const colorIndex = Math.floor(Math.random() * palette.length);
+            const selectedTag = tagSelector.value;
+            const lineData = years.map(year => {
+                const idx = data[year].tags.indexOf(selectedTag);
+                return idx !== -1 ? data[year].percentages[idx] : 0;
+            });
+
+            if (lineChartInstance) lineChartInstance.destroy();
+            lineChartInstance = new Chart(lineChartCanvas, {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: [{
+                        label: selectedTag,
+                        data: lineData,
+                        borderColor: getColor(colorIndex, 1),         // pick 0th color (cyan) for border
+												backgroundColor: getColor(colorIndex, 0.3),   // translucent fill
+
+                        fill: true
+                    }]
+                },
+                options: {
+    responsive: true,
+    maintainAspectRatio: false, // lets it fill the card
+    plugins: {
+        legend: {
+            labels: {
+                color: "#fff",
+                font: {
+                    size: 14,
+                    weight: 'bold'
+                }
+            }
+        },
+        title: {
+            display: true,
+            text: `Popularity of "${selectedTag}"`,
+            color: "#fff",
+            font: {
+                size: 20,
+                weight: 'bold'
+            },
+            padding: {
+                top: 10,
+                bottom: 20
+            }
+        },
+        tooltip: {
+            backgroundColor: "rgba(0,0,0,0.8)",
+            titleColor: "#fff",
+            bodyColor: "#fff",
+            borderColor: "#fff",
+            borderWidth: 1,
+        }
+    },
+    scales: {
+        x: {
+            ticks: {
+                color: "#fff",
+                font: {
+                    size: 13,
+                    weight: "bold"
+                }
+            },
+            grid: {
+                color: "rgba(255, 255, 255, 0.1)"
+            }
+        },
+        y: {
+            ticks: {
+                color: "#fff",
+                font: {
+                    size: 13,
+                    weight: "bold"
+                }
+            },
+            grid: {
+                color: "rgba(255, 255, 255, 0.1)"
+            }
+        }
+    },
+    elements: {
+        line: {
+            tension: 0.4 // smooth curves
+        },
+        point: {
+            radius: 3,
+            backgroundColor: '#fff',
+            borderWidth: 2
+        }
+    }
+}
+
+            });
+        });
+
+        // 📊 3. Overall Line Chart
+        const overallLineChart = new Chart(document.getElementById("overallLineChart"), {
+    type: 'line',
+    data: {
+        labels: years,
+        datasets: allTags.map((tag, i) => ({
+            label: tag,
+            data: years.map(year => {
+                const idx = data[year].tags.indexOf(tag);
+                return idx !== -1 ? data[year].percentages[idx] : 0;
+            }),
+            borderColor: customPalette[i % customPalette.length],
+            backgroundColor: customPalette[i % customPalette.length],
+            tension: 0.3,                  // 🎯 Smooth curves
+            pointRadius: 4,               // 📍 Larger points
+            pointHoverRadius: 6,          // ✨ Point grows on hover
+            pointBackgroundColor: "#fff", // 🎨 White center
+            pointBorderColor: customPalette[i % customPalette.length],
+            fill: false                   // No fill under line
+        }))
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                labels: {
+                    color: "#fff",
+                    boxWidth: 14,
+                    font: {
+                        family: "Arial", size: 12
+                    }
+                }
+            },
+            title: {
+                display: true,
+                text: '📊 Trends of All Top Tags (2021–2025)',
+                color: '#fff',
+                font: {
+                    size: 18
+                }
+            },
+            tooltip: {
+                enabled: true,
+                mode: 'nearest',
+                intersect: false,
+                backgroundColor: '#333',
+                titleColor: '#fff',
+                bodyColor: '#fff',
+                callbacks: {
+                    label: function(context) {
+                        return `${context.dataset.label}: ${context.parsed.y.toFixed(2)}%`;
+                    }
+                }
+            }
+        },
+        interaction: {
+            mode: 'nearest',
+            intersect: false
+        },
+        scales: {
+            x: {
+                ticks: {
+                    color: "#fff"
+                },
+                grid: {
+                    color: "rgba(255, 255, 255, 0.1)" // Soft grid lines
+                }
+            },
+            y: {
+                ticks: {
+                    color: "#fff",
+                    callback: function(value) {
+                        return value + "%";
+                    }
+                },
+                grid: {
+                    color: "rgba(255, 255, 255, 0.1)"
+                }
+            }
+        }
+    }
+});
+
+const radarSelector = document.getElementById("radarYear");
+years.forEach(year => {
+    const option = document.createElement("option");
+    option.value = year;
+    option.innerText = year;
+    radarSelector.appendChild(option);
+});
+
+const radarCanvas = document.getElementById("radarChart");
+let radarChartInstance;
+
+const radarPalette = [
+    'rgba(0, 188, 212, 0.4)',  // Cyan
+    'rgba(255, 64, 129, 0.4)', // Pink
+    'rgba(124, 77, 255, 0.4)', // Purple
+    'rgba(76, 175, 80, 0.4)',  // Green
+    'rgba(255, 152, 0, 0.4)'   // Orange
+];
+
+const radarBorderPalette = [
+    'rgba(0, 188, 212, 1)',
+    'rgba(255, 64, 129, 1)',
+    'rgba(124, 77, 255, 1)',
+    'rgba(76, 175, 80, 1)',
+    'rgba(255, 152, 0, 1)'
+];
+
+radarSelector.addEventListener("change", () => {
+    const year = radarSelector.value;
+
+    const radarData = {
+        labels: data[year].tags,
+        datasets: [{
+            label: `Top Tags in ${year}`,
+            data: data[year].percentages,
+            backgroundColor: radarPalette[year % radarPalette.length],
+            borderColor: radarBorderPalette[year % radarBorderPalette.length],
+            borderWidth: 2,
+            pointBackgroundColor: "#fff",
+            pointBorderColor: radarBorderPalette[year % radarBorderPalette.length],
+            pointRadius: 4,
+            pointHoverRadius: 6
+        }]
+    };
+
+    if (radarChartInstance) radarChartInstance.destroy();
+
+    radarChartInstance = new Chart(radarCanvas, {
+        type: 'radar',
+        data: radarData,
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: "#fff",
+                        font: {
+                            size: 13,
+                            family: 'Arial'
+                        }
+                    }
+                },
+                title: {
+                    display: true,
+                    text: `📊 Radar View: Tag Trends in ${year}`,
+                    color: "#fff",
+                    font: {
+                        size: 18
+                    }
+                },
+                tooltip: {
+                    backgroundColor: "#222",
+                    titleColor: "#fff",
+                    bodyColor: "#fff",
+                    callbacks: {
+                        label: (context) => `${context.label}: ${context.parsed.toFixed(2)}%`
+                    }
+                }
+            },
+            scales: {
+                r: {
+                    angleLines: { color: 'rgba(255, 255, 255, 0.2)' },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                    pointLabels: {
+                        color: "#fff",
+                        font: { size: 16 }
+                    },
+                    ticks: {
+                        color: "black",
+                        backdropColor: "transparent",
+                        callback: value => `${value}%`
+                    }
+                }
+            }
+        }
+    });
+});
+
+        // 🧁 5. Pie Chart
+        const pieSelector = document.getElementById("pieYear");
+years.forEach(year => {
+    const option = document.createElement("option");
+    option.value = year;
+    option.innerText = year;
+    pieSelector.appendChild(option);
+});
+
+const pieCanvas = document.getElementById("pieChart");
+let pieChartInstance;
+
+// Predefined soft but vibrant color palette
+const piePalette = [
+    '#f94144', '#f3722c', '#f8961e', '#f9844a', '#f9c74f',
+    '#90be6d', '#43aa8b', '#577590', '#277da1', '#4d908e'
+];
+
+pieSelector.addEventListener("change", () => {
+    const year = pieSelector.value;
+    const pieData = {
+        labels: data[year].tags,
+        datasets: [{
+            data: data[year].percentages,
+            backgroundColor: data[year].tags.map((_, i) => piePalette[i % piePalette.length]),
+            borderColor: '#1e1e1e',
+            borderWidth: 2,
+            hoverOffset: 8
+        }]
+    };
+
+    if (pieChartInstance) pieChartInstance.destroy();
+
+    pieChartInstance = new Chart(pieCanvas, {
+        type: 'pie',
+        data: pieData,
+        options: {
+            responsive: true,
+            animation: {
+                animateScale: true,
+                animateRotate: true
+            },
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: "#fff",
+                        font: { size: 13 }
+                    }
+                },
+                title: {
+                    display: true,
+                    text: `📈 Pie Chart: Tag Popularity in ${year}`,
+                    color: "#fff",
+                    font: { size: 18 }
+                },
+                tooltip: {
+                    backgroundColor: "#333",
+                    titleColor: "#fff",
+                    bodyColor: "#fff",
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            return `${label}: ${value.toFixed(2)}%`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+
+
+        // 🧱 6. Stacked Bar Chart
+        const stackedBarChart = new Chart(document.getElementById("stackedBarChart"), {
+    type: 'bar',
+    data: {
+        labels: allTags,
+        datasets: years.map((year, i) => ({
+            label: year,
+            data: allTags.map(tag => {
+                const idx = data[year].tags.indexOf(tag);
+                return idx !== -1 ? data[year].percentages[idx] : 0;
+            }),
+            backgroundColor: customPalette[i % customPalette.length],
+            borderRadius: 4,
+            borderSkipped: false
+        }))
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top',
+                labels: {
+                    color: "#fff",
+                    font: { size: 13 }
+                }
+            },
+            title: {
+                display: true,
+                text: '📊 Stacked Tag Percentages by Year',
+                color: "#fff",
+                font: { size: 18 }
+            },
+            tooltip: {
+                backgroundColor: "#333",
+                titleColor: "#fff",
+                bodyColor: "#fff",
+                callbacks: {
+                    label: function(context) {
+                        return `${context.dataset.label}: ${context.raw.toFixed(2)}%`;
+                    }
+                }
+            }
+        },
+        interaction: {
+            mode: 'index',
+            intersect: false
+        },
+        layout: {
+            padding: {
+                right: 20  // Removes the extra right margin issue
+            }
+        },
+        scales: {
+            x: {
+                stacked: true,
+                ticks: { color: '#fff' },
+                grid: {
+                    color: 'rgba(255,255,255,0.1)'
+                }
+            },
+            y: {
+                stacked: true,
+                ticks: {
+                    color: '#fff',
+                    callback: value => `${value}%`
+                },
+                grid: {
+                    color: 'rgba(255,255,255,0.1)'
+                }
+            }
+        }
+    }
+});
+
+        });
+
+
+</script>
+
+</body>
+</html>
